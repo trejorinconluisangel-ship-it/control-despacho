@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Control Integral de Despacho Jurídico (Sincronizado)</title>
+    <style>
+        :root {
+            --primary: #1a365d;
+            --secondary: #2b6cb0;
+            --bg: #f4f7f6;
+            --card: #ffffff;
+            --text: #2d3748;
+            --border: #e2e8f0;
+            --danger: #e53e3e;
+            --success: #38a169;
+            --warning: #d69e2e;
+            --info: #3182ce;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 10px;
+            -webkit-text-size-adjust: 100%;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 5px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin: 10px 0 5px 0;
+        }
+        p.subtitle {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin: 0;
+        }
+        .nav-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+        .nav-tab {
+            background-color: #cbd5e1;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: #334155;
+            flex: 1 1 auto;
+            text-align: center;
+            min-width: 110px;
+        }
+        .nav-tab.active {
+            background-color: var(--primary);
+            color: white;
+        }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        h2 {
+            font-size: 1.1rem;
+            color: var(--primary);
+            margin-top: 0;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 8px;
+        }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .btn-secondary { background-color: #4a5568; }
+        .btn-success { background-color: var(--success); }
+        .btn-danger { background-color: var(--danger); }
+        .btn-info { background-color: var(--info); }
+        .actions-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            min-width: 950px;
+        }
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+        }
+        th {
+            background-color: #f8fafc;
+            color: var(--primary);
+        }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: white;
+        }
+        .badge-urgente { background-color: var(--danger); }
+        .badge-tramite { background-color: var(--warning); }
+        .badge-concluido { background-color: var(--success); }
+        .badge-portal { background-color: #2b6cb0; }
+        
+        @media (max-width: 768px) {
+            .nav-tab { flex: 1 1 45%; min-width: unset; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Control Integral de Despacho Jurídico</h1>
+            <p class="subtitle">Sincronización Automática en la Nube</p>
+        </header>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="cambiarVista('dashboard')">Dashboard</button>
+            <button class="nav-tab" onclick="cambiarVista('expedientes')">Expedientes</button>
+            <button class="nav-tab" onclick="cambiarVista('monitoreo')">Monitoreo Amparos</button>
+            <button class="nav-tab" onclick="cambiarVista('checklist')">Checklist L-V</button>
+            <button class="nav-tab" onclick="cambiarVista('agenda')">Agenda</button>
+            <button class="nav-tab" onclick="cambiarVista('respaldos')">Respaldos</button>
+        </div>
+
+        <div id="vista-dashboard" class="vista-seccion">
+            <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
+                <div class="card" style="flex: 1; min-width: 180px; text-align: center;">
+                    <h3 style="margin: 0; color: #64748b; font-size: 0.9rem;">Total Expedientes</h3>
+                    <p id="stat-total" style="font-size: 2rem; font-weight: bold; color: var(--primary); margin: 5px 0;">0</p>
+                </div>
+                <div class="card" style="flex: 1; min-width: 180px; text-align: center;">
+                    <h3 style="margin: 0; color: #64748b; font-size: 0.9rem;">Amparos a Monitorear</h3>
+                    <p id="stat-monitoreo" style="font-size: 2rem; font-weight: bold; color: var(--info); margin: 5px 0;">0</p>
+                </div>
+                <div class="card" style="flex: 1; min-width: 180px; text-align: center;">
+                    <h3 style="margin: 0; color: #64748b; font-size: 0.9rem;">Urgentes</h3>
+                    <p id="stat-urgentes" style="font-size: 2rem; font-weight: bold; color: var(--danger); margin: 5px 0;">0</p>
+                </div>
+                <div class="card" style="flex: 1; min-width: 180px; text-align: center;">
+                    <h3 style="margin: 0; color: #64748b; font-size: 0.9rem;">Próximas Audiencias</h3>
+                    <p id="stat-audiencias" style="font-size: 2rem; font-weight: bold; color: var(--warning); margin: 5px 0;">0</p>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Buscador Rápido Global</h2>
+                <div class="form-group">
+                    <input type="text" id="buscador-global" placeholder="Busca por palabra clave, amparo, promovente, ubicación, notas..." onkeyup="filtrarAsuntos()">
+                </div>
+            </div>
+        </div>
+
+        <div id="vista-expedientes" class="vista-seccion" style="display: none;">
+            <div class="card">
+                <h2 id="form-titulo">Registrar Nuevo Asunto</h2>
+                <form id="form-expediente" onsubmit="guardarExpediente(event)">
+                    <input type="hidden" id="edit-id" value="">
+                    
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <div class="form-group" style="flex: 1; min-width: 180px;">
+                            <label>Materia / Rama</label>
+                            <select id="tipo" onchange="actualizarFormularioRama()" required>
+                                <option value="Penal">Carpeta de Investigación (Penal)</option>
+                                <option value="Civil">Civil / Familiar / Mercantil</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 2; min-width: 250px;">
+                            <label id="label-identificador">Número Identificador</label>
+                            <input type="text" id="identificador" placeholder="Ej. CI/SJR/1010/2026" required>
+                        </div>
+                        <div class="form-group" id="grupo-causa" style="flex: 2; min-width: 250px;">
+                            <label>Causa Penal / Carpeta Judicial</label>
+                            <input type="text" id="causaPenal" placeholder="Ej. CP-123/2026">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <div class="form-group" id="grupo-delito" style="flex: 1; min-width: 180px;">
+                            <label>Delito</label>
+                            <input type="text" id="delito" placeholder="Ej. Robo con violencia">
+                        </div>
+                        <div class="form-group" style="flex: 1; min-width: 180px;">
+                            <label id="label-parte1">Ofendido</label>
+                            <input type="text" id="parte1" placeholder="Nombre del ofendido" required>
+                        </div>
+                        <div class="form-group" style="flex: 1; min-width: 180px;">
+                            <label id="label-parte2">Imputado</label>
+                            <input type="text" id="parte2" placeholder="Nombre del imputado" required>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <div class="form-group" style="flex: 2; min-width: 220px;">
+                            <label id="label-ubicacion">Fiscalía / Unidad (Penal)</label>
+                            <input type="text" id="ubicacion" placeholder="Ej. Fiscalía Regional San Juan del Río">
+                        </div>
+                        <div class="form-group" style="flex: 1; min-width: 160px;">
+                            <label>Ubicación Física (Archivo)</label>
+                            <input type="text" id="ubicacionFisica" placeholder="Ej. Cajón 4, Folder rojo">
+                        </div>
+                        <div class="form-group" style="flex: 1; min-width: 150px;">
+                            <label>Estatus / Prioridad</label>
+                            <select id="estatus">
+                                <option value="Urgente">🔴 Urgente</option>
+                                <option value="En Trámite" selected>🟡 En Trámite</option>
+                                <option value="Concluido">🟢 Concluido</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Anotaciones / Referencias de Búsqueda</label>
+                        <input type="text" id="anotaciones" placeholder="Ej. Asunto taller mecánico, amigo de Luis">
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="btn" id="btn-guardar-cambios">Guardar Registro</button>
+                        <button type="button" class="btn btn-secondary" id="btn-cancelar-edicion" style="display:none;" onclick="cancelarEdicion()">Cancelar Edición</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>Listado General de Asuntos</h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Materia</th>
+                                <th>Identificador</th>
+                                <th>Causa Penal / Judicial</th>
+                                <th>Delito</th>
+                                <th id="th-parte1">Ofendido</th>
+                                <th id="th-parte2">Imputado</th>
+                                <th id="th-ubicacion">Fiscalía / Unidad</th>
+                                <th>Ubicación Física</th>
+                                <th>Anotaciones</th>
+                                <th>Estatus</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-expedientes-body">
+                            <tr><td colspan="11" style="text-align: center; color: #64748b;">Cargando registros...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="vista-monitoreo" class="vista-seccion" style="display: none;">
+            <div class="card">
+                <h2 id="form-monitoreo-titulo">Registrar Amparo / Expediente a Monitorear</h2>
+                <form id="form-monitoreo" onsubmit="guardarMonitoreo(event)">
+                    <input type="hidden" id="mon-edit-id" value="">
+                    
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <div class="form-group" style="flex: 1; min-width: 180px;">
+                            <label>Folio del Expediente / Amparo</label>
+                            <input type="text" id="mon-folio" placeholder="Ej. Amparo 123/2026" required>
+                        </div>
+                        <div class="form-group" style="flex: 2; min-width: 220px;">
+                            <label>Promovente / Quejoso</label>
+                            <input type="text" id="mon-promovente" placeholder="Nombre del promovente o quejoso" required>
+                        </div>
+                        <div class="form-group" style="flex: 2; min-width: 220px;">
+                            <label>Juzgado ante el cual se promueve</label>
+                            <input type="text" id="mon-juzgado" placeholder="Ej. Juzgado Primero de Distrito en Qro." required>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <div class="form-group" style="flex: 1; min-width: 220px;">
+                            <label>Portal de Verificación</label>
+                            <select id="mon-portal" required>
+                                <option value="PJF (Federal)">Portal PJF (Poder Judicial de la Federación)</option>
+                                <option value="PJQ (Querétaro)">Portal PJQ (Poder Judicial de Querétaro)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 3; min-width: 300px;">
+                            <label>Breve Descripción del Asunto</label>
+                            <input type="text" id="mon-descripcion" placeholder="Ej. Contra orden de aprehensión / Amparo indirecto..." required>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="btn" id="btn-mon-guardar">Agregar a Monitoreo</button>
+                        <button type="button" class="btn btn-secondary" id="btn-mon-cancelar" style="display:none;" onclick="cancelarEdicionMonitoreo()">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>Listado de Amparos y Expedientes en Monitoreo</h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Folio / Amparo</th>
+                                <th>Promovente / Quejoso</th>
+                                <th>Juzgado</th>
+                                <th>Portal de Verificación</th>
+                                <th>Descripción</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-monitoreo-body">
+                            <tr><td colspan="6" style="text-align: center; color: #64748b;">Cargando amparos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="vista-checklist" class="vista-seccion" style="display: none;">
+            <div class="card">
+                <h2>Checklist de Consulta Diaria (Lunes a Viernes)</h2>
+                <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 15px;">
+                    Marca las casillas conforme vayas revisando los portales correspondientes cada día de la semana.
+                </p>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Folio / Amparo</th>
+                                <th>Promovente</th>
+                                <th>Portal</th>
+                                <th style="text-align: center;">Lunes</th>
+                                <th style="text-align: center;">Martes</th>
+                                <th style="text-align: center;">Miércoles</th>
+                                <th style="text-align: center;">Jueves</th>
+                                <th style="text-align: center;">Viernes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-checklist-body">
+                            <tr><td colspan="8" style="text-align: center; color: #64748b;">Cargando checklist...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="vista-agenda" class="vista-seccion" style="display: none;">
+            <div class="card">
+                <h2>Programar Audiencia o Vencimiento</h2>
+                <form id="form-agenda" onsubmit="guardarAudiencia(event)">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <div class="form-group" style="flex: 2; min-width: 200px;">
+                            <label>Asunto / Descripción</label>
+                            <input type="text" id="agenda-titulo" placeholder="Ej. Audiencia Inicial / Vencimiento" required>
+                        </div>
+                        <div class="form-group" style="flex: 1; min-width: 150px;">
+                            <label>Fecha y Hora</label>
+                            <input type="datetime-local" id="agenda-fecha" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">Agendar Evento</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>Próximos Eventos</h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Descripción</th>
+                                <th>Fecha y Hora</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-agenda-body">
+                            <tr><td colspan="3" style="text-align: center; color: #64748b;">Cargando agenda...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="vista-respaldos" class="vista-seccion" style="display: none;">
+            <div class="card">
+                <h2>Seguridad y Sincronización</h2>
+                <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 15px;">
+                    Tus datos se guardan y sincronizan automáticamente en la nube de Railway en tiempo real.
+                </p>
+                <div class="actions-bar">
+                    <button class="btn btn-success" onclick="exportarExcelCSV()">📊 Exportar a Excel (CSV)</button>
+                    <button class="btn btn-secondary" onclick="exportarDatos()">📥 Descargar Respaldo (JSON)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let expedientes = [];
+        let monitoreo = [];
+        let checklist = {};
+        let audiencias = [];
+
+        async function cargarDatosServidor() {
+            try {
+                const res = await fetch('/api/datos');
+                const data = await res.json();
+                if (data.expedientes) expedientes = data.expedientes;
+                if (data.monitoreo) monitoreo = data.monitoreo;
+                if (data.checklist) checklist = data.checklist;
+                if (data.audiencias) audiencias = data.audiencias;
+            } catch (err) {
+                console.error("Error al cargar de la nube", err);
+            }
+            renderExpedientes();
+            renderMonitoreo();
+            renderAgenda();
+        }
+
+        async function guardarEnServidor(clave, contenido) {
+            try {
+                await fetch('/api/datos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clave, contenido })
+                });
+            } catch (err) {
+                console.error("Error al guardar en la nube", err);
+            }
+        }
+
+        function cambiarVista(vista) {
+            document.querySelectorAll('.vista-seccion').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+            document.getElementById('vista-' + vista).style.display = 'block';
+            event.currentTarget.classList.add('active');
+            if(vista === 'checklist') renderChecklist();
+            actualizarDashboard();
+        }
+
+        function actualizarFormularioRama() {
+            const tipo = document.getElementById('tipo').value;
+            const grupoDelito = document.getElementById('grupo-delito');
+            const grupoCausa = document.getElementById('grupo-causa');
+            const lblId = document.getElementById('label-identificador');
+            const txtId = document.getElementById('identificador');
+            const lblP1 = document.getElementById('label-parte1');
+            const txtP1 = document.getElementById('parte1');
+            const lblP2 = document.getElementById('label-parte2');
+            const txtP2 = document.getElementById('parte2');
+            const thP1 = document.getElementById('th-parte1');
+            const thP2 = document.getElementById('th-parte2');
+            const lblUbi = document.getElementById('label-ubicacion');
+            const txtUbi = document.getElementById('ubicacion');
+            const thUbi = document.getElementById('th-ubicacion');
+
+            if (tipo === 'Penal') {
+                grupoDelito.style.display = 'block';
+                grupoCausa.style.display = 'block';
+                lblId.innerText = 'Número Identificador';
+                txtId.placeholder = 'CI/SJR/1010/2026';
+                lblP1.innerText = 'Ofendido';
+                txtP1.placeholder = 'Nombre del ofendido';
+                lblP2.innerText = 'Imputado';
+                txtP2.placeholder = 'Nombre del imputado';
+                thP1.innerText = 'Ofendido';
+                thP2.innerText = 'Imputado';
+                lblUbi.innerText = 'Fiscalía / Unidad';
+                txtUbi.placeholder = 'Ej. Fiscalía Regional';
+                thUbi.innerText = 'Fiscalía / Unidad';
+            } else {
+                grupoDelito.style.display = 'none';
+                grupoCausa.style.display = 'none';
+                document.getElementById('delito').value = 'N/A';
+                document.getElementById('causaPenal').value = 'N/A';
+                lblId.innerText = 'Número de Expediente';
+                txtId.placeholder = '1010/2026';
+                lblP1.innerText = 'Parte Demandante / Actor';
+                txtP1.placeholder = 'Nombre del actor';
+                lblP2.innerText = 'Parte Demandada';
+                txtP2.placeholder = 'Nombre del demandado';
+                thP1.innerText = 'Parte Demandante / Actor';
+                thP2.innerText = 'Parte Demandada';
+                lblUbi.innerText = 'Juzgado';
+                txtUbi.placeholder = 'Ej. Juzgado Primero Civil';
+                thUbi.innerText = 'Juzgado';
+            }
+        }
+
+        async function guardarExpediente(e) {
+            e.preventDefault();
+            const tipo = document.getElementById('tipo').value;
+            const editId = document.getElementById('edit-id').value;
+            
+            const datosRegistro = {
+                id: editId ? Number(editId) : Date.now(),
+                tipo: tipo,
+                identificador: document.getElementById('identificador').value,
+                causaPenal: tipo === 'Penal' ? (document.getElementById('causaPenal').value || 'Sin judicializar') : 'N/A',
+                delito: tipo === 'Penal' ? document.getElementById('delito').value : 'N/A',
+                parte1: document.getElementById('parte1').value,
+                parte2: document.getElementById('parte2').value,
+                ubicacion: document.getElementById('ubicacion').value,
+                ubicacionFisica: document.getElementById('ubicacionFisica').value,
+                anotaciones: document.getElementById('anotaciones').value,
+                estatus: document.getElementById('estatus').value
+            };
+
+            if (editId) {
+                expedientes = expedientes.map(item => item.id === Number(editId) ? datosRegistro : item);
+            } else {
+                expedientes.push(datosRegistro);
+            }
+
+            await guardarEnServidor('expedientes', expedientes);
+            cancelarEdicion();
+            renderExpedientes();
+            alert('¡Guardado y sincronizado en la nube!');
+        }
+
+        function editarExpediente(id) {
+            const item = expedientes.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('edit-id').value = item.id;
+            document.getElementById('tipo').value = item.tipo;
+            actualizarFormularioRama();
+
+            document.getElementById('identificador').value = item.identificador;
+            if (item.tipo === 'Penal') {
+                document.getElementById('causaPenal').value = item.causaPenal || '';
+                document.getElementById('delito').value = item.delito || '';
+            }
+            document.getElementById('parte1').value = item.parte1;
+            document.getElementById('parte2').value = item.parte2;
+            document.getElementById('ubicacion').value = item.ubicacion;
+            document.getElementById('ubicacionFisica').value = item.ubicacionFisica;
+            document.getElementById('anotaciones').value = item.anotaciones;
+            document.getElementById('estatus').value = item.estatus;
+
+            document.getElementById('form-titulo').innerText = 'Editar Registro de Asunto';
+            document.getElementById('btn-guardar-cambios').innerText = 'Actualizar Registro';
+            document.getElementById('btn-cancelar-edicion').style.display = 'inline-block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelarEdicion() {
+            document.getElementById('form-expediente').reset();
+            document.getElementById('edit-id').value = '';
+            document.getElementById('form-titulo').innerText = 'Registrar Nuevo Asunto';
+            document.getElementById('btn-guardar-cambios').innerText = 'Guardar Registro';
+            document.getElementById('btn-cancelar-edicion').style.display = 'none';
+            actualizarFormularioRama();
+        }
+
+        async function eliminarExpediente(id) {
+            if(confirm('¿Desea eliminar este registro?')) {
+                expedientes = expedientes.filter(item => item.id !== id);
+                await guardarEnServidor('expedientes', expedientes);
+                renderExpedientes();
+            }
+        }
+
+        function renderExpedientes(lista = expedientes) {
+            const tbody = document.getElementById('tabla-expedientes-body');
+            if (lista.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: #64748b;">No hay registros guardados.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = lista.map(item => `
+                <tr>
+                    <td>${item.tipo}</td>
+                    <td><strong>${item.identificador}</strong></td>
+                    <td><span style="color: #2b6cb0; font-weight: 500;">${item.causaPenal || 'N/A'}</span></td>
+                    <td>${item.delito}</td>
+                    <td>${item.parte1}</td>
+                    <td>${item.parte2}</td>
+                    <td>${item.ubicacion}</td>
+                    <td>${item.ubicacionFisica}</td>
+                    <td><span style="color: #b45309; font-weight: 500;">${item.anotaciones}</span></td>
+                    <td><span class="badge ${item.estatus === 'Urgente' ? 'badge-urgente' : item.estatus === 'Concluido' ? 'badge-concluido' : 'badge-tramite'}">${item.estatus}</span></td>
+                    <td>
+                        <button class="btn btn-info" style="padding: 4px 8px; font-size: 0.75rem; margin-bottom: 3px;" onclick="editarExpediente(${item.id})">Editar</button>
+                        <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;" onclick="eliminarExpediente(${item.id})">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+            actualizarDashboard();
+        }
+
+        async function guardarMonitoreo(e) {
+            e.preventDefault();
+            const editId = document.getElementById('mon-edit-id').value;
+            const nuevoMon = {
+                id: editId ? Number(editId) : Date.now(),
+                folio: document.getElementById('mon-folio').value,
+                promovente: document.getElementById('mon-promovente').value,
+                juzgado: document.getElementById('mon-juzgado').value,
+                portal: document.getElementById('mon-portal').value,
+                descripcion: document.getElementById('mon-descripcion').value
+            };
+
+            if (editId) {
+                monitoreo = monitoreo.map(i => i.id === Number(editId) ? nuevoMon : i);
+            } else {
+                monitoreo.push(nuevoMon);
+            }
+
+            await guardarEnServidor('monitoreo', monitoreo);
+            cancelarEdicionMonitoreo();
+            renderMonitoreo();
+            alert('¡Amparo guardado y sincronizado!');
+        }
+
+        function editarMonitoreo(id) {
+            const item = monitoreo.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('mon-edit-id').value = item.id;
+            document.getElementById('mon-folio').value = item.folio;
+            document.getElementById('mon-promovente').value = item.promovente;
+            document.getElementById('mon-juzgado').value = item.juzgado;
+            document.getElementById('mon-portal').value = item.portal;
+            document.getElementById('mon-descripcion').value = item.descripcion;
+
+            document.getElementById('form-monitoreo-titulo').innerText = 'Editar Amparo en Monitoreo';
+            document.getElementById('btn-mon-guardar').innerText = 'Actualizar Amparo';
+            document.getElementById('btn-mon-cancelar').style.display = 'inline-block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelarEdicionMonitoreo() {
+            document.getElementById('form-monitoreo').reset();
+            document.getElementById('mon-edit-id').value = '';
+            document.getElementById('form-monitoreo-titulo').innerText = 'Registrar Amparo / Expediente a Monitorear';
+            document.getElementById('btn-mon-guardar').innerText = 'Agregar a Monitoreo';
+            document.getElementById('btn-mon-cancelar').style.display = 'none';
+        }
+
+        async function eliminarMonitoreo(id) {
+            if(confirm('¿Desea eliminar este amparo?')) {
+                monitoreo = monitoreo.filter(i => i.id !== id);
+                await guardarEnServidor('monitoreo', monitoreo);
+                renderMonitoreo();
+            }
+        }
+
+        function renderMonitoreo() {
+            const tbody = document.getElementById('tabla-monitoreo-body');
+            if (monitoreo.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748b;">No hay amparos registrados.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = monitoreo.map(item => `
+                <tr>
+                    <td><strong>${item.folio}</strong></td>
+                    <td>${item.promovente}</td>
+                    <td>${item.juzgado}</td>
+                    <td><span class="badge badge-portal">${item.portal}</span></td>
+                    <td>${item.descripcion}</td>
+                    <td>
+                        <button class="btn btn-info" style="padding: 4px 8px; font-size: 0.75rem; margin-bottom: 3px;" onclick="editarMonitoreo(${item.id})">Editar</button>
+                        <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;" onclick="eliminarMonitoreo(${item.id})">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+            actualizarDashboard();
+        }
+
+        function renderChecklist() {
+            const tbody = document.getElementById('tabla-checklist-body');
+            if (monitoreo.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #64748b;">No hay amparos registrados.</td></tr>';
+                return;
+            }
+            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
+            tbody.innerHTML = monitoreo.map(item => {
+                if (!checklist[item.id]) checklist[item.id] = { lunes: false, martes: false, miercoles: false, jueves: false, viernes: false };
+                return `
+                    <tr>
+                        <td><strong>${item.folio}</strong></td>
+                        <td>${item.promovente}</td>
+                        <td><span class="badge badge-portal">${item.portal}</span></td>
+                        ${dias.map(dia => `
+                            <td style="text-align: center;">
+                                <input type="checkbox" style="width: 20px; height: 20px; cursor: pointer;" 
+                                    ${checklist[item.id][dia] ? 'checked' : ''} 
+                                    onchange="toggleChecklist(${item.id}, '${dia}', this.checked)">
+                            </td>
+                        `).join('')}
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function toggleChecklist(id, dia, estado) {
+            if (!checklist[id]) checklist[id] = { lunes: false, martes: false, miercoles: false, jueves: false, viernes: false };
+            checklist[id][dia] = estado;
+            await guardarEnServidor('checklist', checklist);
+        }
+
+        function filtrarAsuntos() {
+            const texto = document.getElementById('buscador-global').value.toLowerCase();
+            const filtrados = expedientes.filter(item => 
+                (item.identificador && item.identificador.toLowerCase().includes(texto)) ||
+                (item.causaPenal && item.causaPenal.toLowerCase().includes(texto)) ||
+                (item.anotaciones && item.anotaciones.toLowerCase().includes(texto)) ||
+                (item.ubicacion && item.ubicacion.toLowerCase().includes(texto)) ||
+                (item.ubicacionFisica && item.ubicacionFisica.toLowerCase().includes(texto)) ||
+                (item.parte1 && item.parte1.toLowerCase().includes(texto)) ||
+                (item.parte2 && item.parte2.toLowerCase().includes(texto)) ||
+                (item.delito && item.delito.toLowerCase().includes(texto))
+            );
+            renderExpedientes(filtrados);
+        }
+
+        async function guardarAudiencia(e) {
+            e.preventDefault();
+            const nueva = {
+                id: Date.now(),
+                titulo: document.getElementById('agenda-titulo').value,
+                fecha: document.getElementById('agenda-fecha').value
+            };
+            audiencias.push(nueva);
+            await guardarEnServidor('audiencias', audiencias);
+            document.getElementById('form-agenda').reset();
+            renderAgenda();
+            alert('¡Audiencia agendada y sincronizada!');
+        }
+
+        async function eliminarAudiencia(id) {
+            audiencias = audiencias.filter(item => item.id !== id);
+            await guardarEnServidor('audiencias', audiencias);
+            renderAgenda();
+        }
+
+        function renderAgenda() {
+            const tbody = document.getElementById('tabla-agenda-body');
+            if (audiencias.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #64748b;">Sin eventos agendados.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = audiencias.map(item => `
+                <tr>
+                    <td><strong>${item.titulo}</strong></td>
+                    <td>${new Date(item.fecha).toLocaleString()}</td>
+                    <td><button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.75rem;" onclick="eliminarAudiencia(${item.id})">Eliminar</button></td>
+                </tr>
+            `).join('');
+            actualizarDashboard();
+        }
+
+        function actualizarDashboard() {
+            document.getElementById('stat-total').innerText = expedientes.length;
+            document.getElementById('stat-monitoreo').innerText = monitoreo.length;
+            document.getElementById('stat-urgentes').innerText = expedientes.filter(i => i.estatus === 'Urgente').length;
+            document.getElementById('stat-audiencias').innerText = audiencias.length;
+        }
+
+        function exportarExcelCSV() {
+            let csv = 'Materia,Identificador,CausaPenal,Delito,Parte1,Parte2,Ubicacion,UbicacionFisica,Anotaciones,Estatus\n';
+            expedientes.forEach(i => {
+                csv += `"${i.tipo}","${i.identificador}","${i.causaPenal || 'N/A'}","${i.delito}","${i.parte1}","${i.parte2}","${i.ubicacion}","${i.ubicacionFisica}","${i.anotaciones}","${i.estatus}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'reporte_expedientes.csv';
+            a.click();
+        }
+
+        function exportarDatos() {
+            const datos = { expedientes, monitoreo, checklist, audiencias };
+            const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'respaldo_despacho.json';
+            a.click();
+        }
+
+        window.onload = function() {
+            cargarDatosServidor();
+        };
+    </script>
+</body>
+</html>
